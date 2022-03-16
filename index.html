@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Generator game</title>
+<link rel="icon" href="thumb.png">
+<script src="ExpantaNum.js"></script>
+<script src="Vue.js"></script>
+<script src="Base.js"></script>
+<script src="script.js" defer></script>
+<script src="setup.js" defer></script>
+<link href="style.css" rel="stylesheet" defer></link>
+</head>
+<body>
+<div id="vue">
+<div id="top">
+<button class="tab" @click="tab=0">Options</button>
+<button class="tab" @click="tab=1">Generators</button>
+<button class="tab prestige" @click="tab=2" v-if="game.unlocks.prestige">Prestige</button>
+<button class="tab challenges" @click="tab=3" v-if="game.unlocks.prestige">Challenges</button>
+</div>
+<div id="secret" v-if="secret===true">
+<div id="news" style="border: 5px black solid; margin: 5px 35%;">1st person to DM me this gets a surprise</div>
+</div>
+<div id="tab1" v-if="tab==1">
+You have {{format(game.money)}} money<br>
+You have {{format(game.machines)}} machine{{pluralize(game.machines)}}<br>
+<div id="buttons">
+<div class="left">
+<button v-bind:class="{canbuy:game.money.gte(moneyPrices())}" class="button" @click="buyMachines(0)">  buy 1 machine for {{format(machinePrice())}}</button>
+<br>
+<button v-if="game.upgrades.time!=19" v-bind:class="{canbuy:game.money.gte(timePrices[game.upgrades.time])}" class="button" @click="buyUpgrades(0)">buy 1 time upgrade for {{format(timePrices[game.upgrades.time])}}<br>currently:{{format(game.upgrades.time)}}</button>
+<button v-if="game.upgrades.time==19" class="button">You cannot buy a time upgrade<br>Currently: 19</button>
+</div>
+<div class="right">
+<button v-bind:class="{canbuy:game.money.gte(5e5)}" class="button" @click="buyMachines(1)"> buy {{format(game.money.div(machinePrice()).floor())}} machine{{pluralize(game.money.div(machinePrice()).floor())}} for {{format(game.money.div(machinePrice()).floor().mult(machinePrice()))}}</button>
+<br>
+<button v-bind:class="{canbuy:game.money.gte(moneyPrices())}" class="button" @click="buyUpgrades(1)">buy 1 money upgrade for {{format(moneyPrices())}}<br>currently: {{format(game.upgrades.money)}}</button>
+</div>
+</div>
+<button v-bind:class="{canprestige:game.money.gte(2**128)}" v-if="game.money.gte(2**128)||game.unlocks.prestige" class="button prestige" @click="prestige()">Prestige for {{format(calculatePrestigeGain())}} prestige points</button>
+</div> 
+<div id="tab0" v-if="tab==0">
+<button class="option" @click="exporty()">Export your save</button>
+<button class="option" @click="importy()">Import your save</button>
+<button class="option" @click="reset()">Reset the game</button>
+<button v-if="secret===true" @click="secret=false" class="option">Disable secret</button>
+<br>
+<button class="option" @click="">Current notation:
+<select class="option" onchange="game.notation=Number(this.value)" style="padding: 0px; border: 0px; margin: 0px;">
+<option disabled selected>{{["Scientific","Engineering","Logarithmic","Standard"][game.notation]}} (ex: {{format(123456789,game.precision,game.notation)}})</option>
+<option value="0">Scientific (ex: {{format(123456789,game.precision,0)}})</option>
+<option value="1">Engineering (ex: {{format(123456789,game.precision,1)}})</option>
+<option value="2">Logarithmic (ex: {{format(123456789,game.precision,2)}})</option>
+<option value="3">Standard (ex: {{format(123456789,game.precision,3)}})</option>
+</select></button>
+<br>
+<a href="changelog.html">Changelog</a>
+<br>
+<a target="_blank" href="https://discord.gg/PSwjHsusFf">Discord</a>
+<br>
+<ul>
+Special thanks to:
+<li>PapauloGamerOfc for helping me with centering</li>
+</ul>
+<button class="bodyhidden" @click="secret=true" v-if="secret===false" >Secret</button>
+</div>
+<div id="tab2" v-if="tab==2">
+you have {{format(game.prestigePoints)}} Prestige points
+<br>
+You have {{format(game.goldenMachines)}} golden machine{{pluralize(game.goldenMachines)}}
+<div id="golden">
+<div class="left">
+<button v-bind:class="{canprestige:game.prestigePoints.logBase(2).gte(game.goldenMachines)}" class="button prestige" @click="buyGolden(0)">Buy 1 golden machine for {{format(ExpantaNum(2).pow(game.goldenMachines))}} prestige point{{pluralize(ExpantaNum(2).pow(game.goldenMachines))}}</button>
+</div>
+<div class="right">
+<button v-bind:class="{canprestige:game.prestigePoints.logBase(2).gte(game.goldenMachines)}" class="button prestige" @click="buyGolden(1)">buy {{format(game.prestigePoints.add(ExpantaNum(2).pow(game.goldenMachines)).logBase(2).floor().sub(game.goldenMachines).toNumber())}} golden machine{{pluralize(game.prestigePoints.add(ExpantaNum(2).pow(game.goldenMachines)).logBase(2).floor().sub(game.goldenMachines))}} for {{format(ExpantaNum(2).pow(game.prestigePoints.add(ExpantaNum(2).pow(game.goldenMachines)).logBase(2).floor()).sub(ExpantaNum(2).pow(game.goldenMachines)))}}</button>
+</div>
+</div>
+you have {{format(game.goldenEssence)}} golden essence (+{{format(calculateEssenceGain())}}/s)<br>
+boosting machines by {{format(goldenEssenceMultiplier(0))}} and golden machines by {{format(goldenEssenceMultiplier(1))}}
+</div>
+<div id="tab3" v-if="tab==3">
+<div v-for="i in Math.ceil(challenges.amount/2)">
+<button class="button" v-for="o in Math.min(2,challenges.amount-2*(i-1))">
+{{o}}{{i}} {{o+i*2-3}} goal:{{format(getCompletionPrice(o+i*2-3))}}
+</button></div>
+</div>
+</div>
+</body>
+</html>
